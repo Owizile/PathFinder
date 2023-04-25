@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/svg">
+        <file>resources/plus.svg</file>
+        <file>resources/minus.svg</file>
+        <file>resources/finishMarker.svg</file>
+        <file>resources/startMarker.svg</file>
+        <file>resources/editMark.svg</file>
+    </qresource>
+    <qresource prefix="/icon">
+        <file>resources/appIcon.ico</file>
+    </qresource>
+</RCC>
