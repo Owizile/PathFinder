@@ -23,6 +23,7 @@ private slots:
     void on_addButton_clicked();
     void on_startMarkButton_clicked();
     void on_finishMarkButton_clicked();
+    void on_Button_Start_Algorithm_clicked();
 
 private:
     Ui::MapEditor *ui;

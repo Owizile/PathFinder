@@ -299,6 +299,48 @@ QPointF MapScene::getFinishMarkPos() {
     return finishMarkPos;
 }
 
+int MapScene::getDifficulty(qreal worldPositionX, qreal worldPositionY, qreal diameter){
+    QPointF point1, point2, point3, point4;
+    point1.setX(worldPositionX);
+    point1.setY(worldPositionY);
+    point2.setX(worldPositionX+diameter);
+    point2.setY(worldPositionY);
+    point3.setX(worldPositionX);
+    point3.setY(worldPositionY+diameter);
+    point4.setX(worldPositionX+diameter);
+    point4.setY(worldPositionY+diameter);
+    int polygonCount = polygonItems.length();
+    for(int i = 0; i < polygonCount;i++){
+        QGraphicsPolygonItem* curPolygon = polygonItems[i];
+        QSpinBox* curSpinBox = qobject_cast<QSpinBox*>(spinBoxes[i]->widget());
+        if(curPolygon->contains(point1) ||curPolygon->contains(point2)||curPolygon->contains(point3)||curPolygon->contains(point4)){
+            return curSpinBox->value();
+        }
+    }
+    return 0;
+}
+bool MapScene::gridStart(qreal worldPositionX, qreal worldPositionY,qreal diameter){
+    QRectF gridNode;
+    QPointF startPoint = getStartMarkPos();
+    startPoint.setX(startPoint.x() + 20);
+    startPoint.setY(startPoint.y() + 25);
+    gridNode.setLeft(worldPositionX);
+    gridNode.setTop(worldPositionY);
+    gridNode.setRight(worldPositionX+diameter);
+    gridNode.setBottom(worldPositionY+diameter);
+    return (gridNode.contains(startPoint));
+}
+bool MapScene::gridFinish(qreal worldPositionX, qreal worldPositionY,qreal diameter){
+    QRectF gridNode;
+    QPointF finishPoint = getFinishMarkPos();
+    finishPoint.setX(finishPoint.x() + 20);
+    finishPoint.setY(finishPoint.y() + 25);
+    gridNode.setLeft(worldPositionX);
+    gridNode.setTop(worldPositionY);
+    gridNode.setRight(worldPositionX+diameter);
+    gridNode.setBottom(worldPositionY+diameter);
+    return (gridNode.contains(finishPoint));
+}
 void MapScene::clear() {
     QGraphicsScene::clear();
     polygonItems = QList<QGraphicsPolygonItem*>();
@@ -308,4 +350,10 @@ void MapScene::clear() {
     finishMarkItem = nullptr;
     polygonItem = nullptr;
     currentLineItem = nullptr;
+}
+QGraphicsPixmapItem* MapScene::startItem(){
+    return startMarkItem;
+}
+QGraphicsPixmapItem* MapScene::finishItem(){
+    return startMarkItem;
 }

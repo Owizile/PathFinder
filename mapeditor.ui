@@ -289,6 +289,13 @@ QLabel {
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="Button_Start_Algorithm">
+         <property name="text">
+          <string>Построить путь</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>

@@ -26,6 +26,12 @@ set(PROJECT_SOURCES
         popup.h
         popup.cpp
         resources.qrc
+        node.h
+        node.cpp
+        grid.h
+        grid.cpp
+        pathfinding.h
+        pathfinding.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
