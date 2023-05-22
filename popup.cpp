@@ -1,7 +1,6 @@
 #include "popup.h"
 
-PopUp::PopUp(QWidget *parent) : QWidget(parent)
-{
+PopUp::PopUp(QWidget *parent) : QWidget(parent) {
     setWindowFlags(Qt::FramelessWindowHint |
                    Qt::Tool |
                    Qt::WindowStaysOnTopHint);
@@ -27,8 +26,7 @@ PopUp::PopUp(QWidget *parent) : QWidget(parent)
 }
 
 
-void PopUp::paintEvent(QPaintEvent *event)
-{
+void PopUp::paintEvent(QPaintEvent *event) {
     Q_UNUSED(event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -45,27 +43,20 @@ void PopUp::paintEvent(QPaintEvent *event)
 }
 
 
-void PopUp::setPopupText(const QString &text)
-{
+void PopUp::setPopupText(const QString &text) {
     label.setText(text);
     adjustSize();
 }
 
 
-void PopUp::show()
-{
+void PopUp::show() {
     setWindowOpacity(0.0);
 
     animation.setDuration(150);
     animation.setStartValue(0.0);
     animation.setEndValue(1.0);
 
-    int padding = 20;
-
-//    setGeometry(QApplication::activeWindow()->geometry().center().x() - qCeil(width() / 2),
-//                QApplication::activeWindow()->geometry().center().y() - qCeil(height() / 2) - padding,
-//                width(),
-//                height());
+    int padding = 25;
 
     setGeometry(QApplication::activeWindow()->geometry().width() - padding - width() + QApplication::activeWindow()->geometry().x(),
                 QApplication::activeWindow()->geometry().height() - padding - height() + QApplication::activeWindow()->geometry().y(),
@@ -78,8 +69,7 @@ void PopUp::show()
 }
 
 
-void PopUp::hideAnimation()
-{
+void PopUp::hideAnimation() {
     timer->stop();
     animation.setDuration(1000);
     animation.setStartValue(1.0);
@@ -88,22 +78,19 @@ void PopUp::hideAnimation()
 }
 
 
-void PopUp::hide()
-{
+void PopUp::hide() {
     if(getPopupOpacity() == 0.0){
         QWidget::hide();
     }
 }
 
 
-void PopUp::setPopupOpacity(float opacity)
-{
+void PopUp::setPopupOpacity(float opacity) {
     popupOpacity = opacity;
     setWindowOpacity(opacity);
 }
 
 
-float PopUp::getPopupOpacity() const
-{
+float PopUp::getPopupOpacity() const {
     return popupOpacity;
 }

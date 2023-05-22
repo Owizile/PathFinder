@@ -23,6 +23,10 @@
    <iconset resource="resources.qrc">
     <normaloff>:/icon/resources/appIcon.ico</normaloff>:/icon/resources/appIcon.ico</iconset>
   </property>
+  <property name="styleSheet">
+   <string notr="true">font-family: Sitka;
+font-size: 14px;</string>
+  </property>
   <property name="toolButtonStyle">
    <enum>Qt::ToolButtonIconOnly</enum>
   </property>
@@ -46,9 +50,9 @@
       </property>
       <property name="styleSheet">
        <string notr="true">QPushButton {
-	max-height: 64;
+	max-height: 50;
 	min-width: 64;
-	min-height: 64;
+	min-height: 50;
 }
 
 QLabel {
@@ -289,9 +293,39 @@ QLabel {
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="Button_Start_Algorithm">
+        <widget class="QPushButton" name="startAlgorithmButton">
          <property name="text">
-          <string>Построить путь</string>
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="resources.qrc">
+           <normaloff>:/svg/resources/route.svg</normaloff>:/svg/resources/route.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Найти путь</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
          </property>
         </widget>
        </item>
@@ -326,10 +360,10 @@ QLabel {
        <enum>QFrame::Raised</enum>
       </property>
       <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
+       <enum>Qt::ScrollBarAsNeeded</enum>
       </property>
       <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
+       <enum>Qt::ScrollBarAsNeeded</enum>
       </property>
       <property name="sizeAdjustPolicy">
        <enum>QAbstractScrollArea::AdjustIgnored</enum>
@@ -350,6 +384,62 @@ QLabel {
     </item>
    </layout>
   </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>Файл</string>
+    </property>
+    <widget class="QMenu" name="menu_2">
+     <property name="title">
+      <string>Сохранить</string>
+     </property>
+     <addaction name="saveFile"/>
+     <addaction name="saveFileAs"/>
+    </widget>
+    <addaction name="loadFile"/>
+    <addaction name="menu_2"/>
+   </widget>
+   <addaction name="menu"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="loadFile">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/svg/resources/loadFile.svg</normaloff>:/svg/resources/loadFile.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Загрузить</string>
+   </property>
+  </action>
+  <action name="saveFile">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/svg/resources/saveFile.svg</normaloff>:/svg/resources/saveFile.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Сохранить</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="saveFileAs">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/svg/resources/saveFile.svg</normaloff>:/svg/resources/saveFile.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Сохранить как...</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>

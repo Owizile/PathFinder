@@ -1,5 +1,17 @@
 #include "mapscene.h"
 
+bool MapScene::isMarkPosValid(QPointF markPoint) {
+    QPolygonF polygon;
+    float gridNodeRadius = 10;
+    for (QGraphicsPolygonItem* polyItem : polygonItems) {
+        polygon = polyItem->polygon();
+        if (getDifficulty(markPoint.x(), markPoint.y(), gridNodeRadius * 2, true) == 100){
+            return false;
+        }
+    }
+    return true;
+}
+
 void MapScene::mousePressEvent(QGraphicsSceneMouseEvent* event) {
     switch(sceneMode){
     case DrawMode:
@@ -30,11 +42,21 @@ void MapScene::mousePressEvent(QGraphicsSceneMouseEvent* event) {
                 startMarkItem = new QGraphicsPixmapItem(pixmap);
                 startMarkItem->setScale(1.5);
                 addItem(startMarkItem);
+                removePath();
             }
             QRectF boundingRect = startMarkItem->boundingRect();
             QPointF pos(event->scenePos().x() - boundingRect.width() / 2.0,
                         event->scenePos().y() - boundingRect.height());
+            if(!isMarkPosValid(pos)) {
+                popUp->setPopupText("Метка не может быть поставлена в непроходимое место");
+                popUp->show();
+                delete startMarkItem;
+                startMarkItem = nullptr;
+                removePath();
+                return;
+            }
             startMarkItem->setPos(pos);
+            removePath();
         }
         break;
     case FinishMarkMode:
@@ -48,7 +70,16 @@ void MapScene::mousePressEvent(QGraphicsSceneMouseEvent* event) {
             QRectF boundingRect = finishMarkItem->boundingRect();
             QPointF pos(event->scenePos().x() - boundingRect.width() / 2.0,
                         event->scenePos().y() - boundingRect.height());
+            if(!isMarkPosValid(pos)) {
+                popUp->setPopupText("Метка не может быть поставлена в непроходимое место");
+                popUp->show();
+                delete finishMarkItem;
+                finishMarkItem = nullptr;
+                removePath();
+                return;
+            }
             finishMarkItem->setPos(pos);
+            removePath();
         }
         break;
     }
@@ -100,6 +131,19 @@ int MapScene::getMode() {
     return sceneMode;
 }
 
+QString MapScene::getModeName() {
+    QString currentMode;
+
+    switch(getMode()) {
+    case 0: { currentMode = "Рисование"; } break;
+    case 1: { currentMode = "Редактирование"; } break;
+    case 2: { currentMode = "Метка старта"; } break;
+    case 3: { currentMode = "Метка финиша"; } break;
+    }
+
+    return currentMode;
+}
+
 void MapScene::setMode(int mode) {
     sceneMode = mode;
 }
@@ -109,37 +153,39 @@ void MapScene::toggleMode(int mode) {
     case EditMode:
         if (sceneMode == EditMode) {
             setMode(DrawMode);
-            popUp->setPopupText("Draw mode setted");
+            popUp->setPopupText("Режим рисования установлен");
         }
         else {
             setMode(EditMode);
-            popUp->setPopupText("Edit mode setted");
+            popUp->setPopupText("Режим редактирования установлен");
         }
         popUp->show();
         break;
     case StartMarkMode:
         if (sceneMode == StartMarkMode) {
             setMode(DrawMode);
-            popUp->setPopupText("Draw mode setted");
+            popUp->setPopupText("Режим рисования установлен");
         }
         else {
             delete startMarkItem;
             startMarkItem = nullptr;
+            removePath();
             setMode(StartMarkMode);
-            popUp->setPopupText("Start mark can be placed");
+            popUp->setPopupText("Метка старта может быть установлена");
         }
         popUp->show();
         break;
     case FinishMarkMode:
         if (sceneMode == FinishMarkMode) {
             setMode(DrawMode);
-            popUp->setPopupText("Draw mode setted");
+            popUp->setPopupText("Режим рисования установлен");
         }
         else {
             delete finishMarkItem;
             finishMarkItem = nullptr;
+            removePath();
             setMode(FinishMarkMode);
-            popUp->setPopupText("Finish mark can be placed");
+            popUp->setPopupText("Метка финиша может быть установлена");
         }
         popUp->show();
         break;
@@ -201,14 +247,62 @@ bool isSelfIntersecting(const QPolygonF& polygon) {
     return false;
 }
 
-void MapScene::addCurrentPolygon() {
+void MapScene::sceneAdjustCheck()
+{
+    QRectF curSceneRect = sceneRect();
+
+    QPointF topRight = curSceneRect.topRight();
+    QPointF topLeft = curSceneRect.topLeft();
+    QPointF bottomRight = curSceneRect.bottomRight();
+    QPointF bottomLeft = curSceneRect.bottomLeft();
+
+    for (const QPointF& point : currentPolygon) {
+        // Calculate the distance between the point and each of the four sides of the scene rect
+        qreal distanceToTop = abs((topRight.x() - topLeft.x()) * (topLeft.y() - point.y()) -
+                              (topLeft.x() - point.x()) * (topRight.y() - topLeft.y())) /
+                              QLineF(topLeft, topRight).length();
+
+        qreal distanceToRight = abs((bottomRight.x() - topRight.x()) * (topRight.y() - point.y()) -
+                                (topRight.x() - point.x()) * (bottomRight.y() - topRight.y())) /
+                                QLineF(topRight, bottomRight).length();
+
+        qreal distanceToBottom = abs((bottomLeft.x() - bottomRight.x()) * (bottomRight.y() - point.y()) -
+                                 (bottomRight.x() - point.x()) * (bottomLeft.y() - bottomRight.y())) /
+                                 QLineF(bottomRight, bottomLeft).length();
+
+        qreal distanceToLeft = abs((topLeft.x() - bottomLeft.x()) * (bottomLeft.y() - point.y()) -
+                               (bottomLeft.x() - point.x()) * (topLeft.y() - bottomLeft.y())) /
+                               QLineF(bottomLeft, topLeft).length();
+
+        qreal allowedDistance = 10;
+
+        //TODO: adjust only a certain side of sceneRect if needed
+
+        if (distanceToTop < allowedDistance || distanceToRight < allowedDistance ||
+            distanceToBottom < allowedDistance || distanceToLeft < allowedDistance) {
+            curSceneRect = curSceneRect.adjusted(-allowedDistance, -allowedDistance, allowedDistance, allowedDistance);
+        }
+    }
+    delete sceneRectItem;
+    sceneRectItem = new QGraphicsRectItem(curSceneRect);
+    sceneRectItem->setPen(QPen(Qt::transparent));
+    addItem(sceneRectItem);
+}
+
+void MapScene::addCurrentPolygon(int polygonDifficulty) {
     if (currentPolygon.empty()){
+        return;
+    }
+    else if (currentPolygon.size() == 2){
+        deleteCurrentPolygon();
+        popUp->setPopupText("Полигон не может быть линией");
+        popUp->show();
         return;
     }
 
     if (isSelfIntersecting(currentPolygon)){
         deleteCurrentPolygon();
-        popUp->setPopupText("Polygon isn't simple");
+        popUp->setPopupText("Полигон не простой");
         popUp->show();
         return;
     }
@@ -241,7 +335,7 @@ void MapScene::addCurrentPolygon() {
                            "}");
     spinBox->setSuffix("%");
     spinBox->setRange(0, 100);
-    spinBox->setValue(100);
+    spinBox->setValue(polygonDifficulty);
 
     QPointF center = polygonCenter(currentPolygon);
 
@@ -265,6 +359,8 @@ void MapScene::addCurrentPolygon() {
         polygonItems[index]->setBrush(QBrush(color));
     });
 
+    sceneAdjustCheck();
+
     currentPolygon = QPolygonF();
     polygonItem = nullptr;
     currentLineItem = nullptr;
@@ -287,41 +383,76 @@ void MapScene::deleteCurrentPolygon() {
     currentPolygon = QPolygonF();
 }
 
-QPointF MapScene::getStartMarkPos() {
-    QPointF startMarkPos(startMarkItem->pos().x(),
-                         startMarkItem->pos().y());
-    return startMarkPos;
+void MapScene::removePath() {
+    foreach (QGraphicsLineItem* item, pathItems) {
+        delete item;
+    }
+    pathItems = QList<QGraphicsLineItem*>();
 }
 
-QPointF MapScene::getFinishMarkPos() {
-    QPointF finishMarkPos(finishMarkItem->pos().x(),
-                          finishMarkItem->pos().y());
-    return finishMarkPos;
+void MapScene::addPathItem(QGraphicsLineItem* item) {
+    pathItems << item;
+    addItem(item);
 }
 
-int MapScene::getDifficulty(qreal worldPositionX, qreal worldPositionY, qreal diameter){
+void MapScene::getStartMarkPos(QPointF& startMarkPos) {
+    if (startMarkItem == nullptr) {
+        return;
+    }
+    startMarkPos.setX(startMarkItem->pos().x());
+    startMarkPos.setY(startMarkItem->pos().y());
+}
+
+void MapScene::getFinishMarkPos(QPointF& finishMarkPos) {
+    if (finishMarkItem == nullptr) {
+        return;
+    }
+    finishMarkPos.setX(finishMarkItem->pos().x());
+    finishMarkPos.setY(finishMarkItem->pos().y());
+}
+
+int MapScene::getDifficulty(qreal worldPositionX, qreal worldPositionY, qreal diameter, bool centered){
     QPointF point1, point2, point3, point4;
-    point1.setX(worldPositionX);
-    point1.setY(worldPositionY);
-    point2.setX(worldPositionX+diameter);
-    point2.setY(worldPositionY);
-    point3.setX(worldPositionX);
-    point3.setY(worldPositionY+diameter);
-    point4.setX(worldPositionX+diameter);
-    point4.setY(worldPositionY+diameter);
+    int maxValue = 0;
+
+    if (centered) {
+        point1.setX(worldPositionX);
+        point1.setY(worldPositionY);
+        point2.setX(worldPositionX + diameter);
+        point2.setY(worldPositionY);
+        point3.setX(worldPositionX);
+        point3.setY(worldPositionY + diameter);
+        point4.setX(worldPositionX + diameter);
+        point4.setY(worldPositionY + diameter);
+    }
+    else {
+        qreal radius = diameter / 2;
+        point1.setX(worldPositionX - radius);
+        point1.setY(worldPositionY - radius);
+        point2.setX(worldPositionX - radius);
+        point2.setY(worldPositionY + radius);
+        point3.setX(worldPositionX + radius);
+        point3.setY(worldPositionY - radius);
+        point4.setX(worldPositionX + radius);
+        point4.setY(worldPositionY + radius);
+    }
     int polygonCount = polygonItems.length();
     for(int i = 0; i < polygonCount;i++){
         QGraphicsPolygonItem* curPolygon = polygonItems[i];
         QSpinBox* curSpinBox = qobject_cast<QSpinBox*>(spinBoxes[i]->widget());
         if(curPolygon->contains(point1) ||curPolygon->contains(point2)||curPolygon->contains(point3)||curPolygon->contains(point4)){
-            return curSpinBox->value();
+            if (curSpinBox->value() > maxValue) {
+                maxValue = curSpinBox->value();
+            }
         }
     }
-    return 0;
+    return maxValue;
 }
+
 bool MapScene::gridStart(qreal worldPositionX, qreal worldPositionY,qreal diameter){
     QRectF gridNode;
-    QPointF startPoint = getStartMarkPos();
+    QPointF startPoint;
+    getStartMarkPos(startPoint);
     startPoint.setX(startPoint.x() + 20);
     startPoint.setY(startPoint.y() + 25);
     gridNode.setLeft(worldPositionX);
@@ -330,9 +461,11 @@ bool MapScene::gridStart(qreal worldPositionX, qreal worldPositionY,qreal diamet
     gridNode.setBottom(worldPositionY+diameter);
     return (gridNode.contains(startPoint));
 }
+
 bool MapScene::gridFinish(qreal worldPositionX, qreal worldPositionY,qreal diameter){
     QRectF gridNode;
-    QPointF finishPoint = getFinishMarkPos();
+    QPointF finishPoint;
+    getFinishMarkPos(finishPoint);
     finishPoint.setX(finishPoint.x() + 20);
     finishPoint.setY(finishPoint.y() + 25);
     gridNode.setLeft(worldPositionX);
@@ -341,19 +474,204 @@ bool MapScene::gridFinish(qreal worldPositionX, qreal worldPositionY,qreal diame
     gridNode.setBottom(worldPositionY+diameter);
     return (gridNode.contains(finishPoint));
 }
+
+QGraphicsPixmapItem* MapScene::getStartItem() {
+    return startMarkItem;
+}
+
+QGraphicsPixmapItem* MapScene::getFinishItem() {
+    return finishMarkItem;
+}
+
+void MapScene::saveMapSceneToXML(QFile& file) {
+
+    if (!file.isOpen() || !file.isWritable()) {
+        return;
+    }
+
+    QXmlStreamWriter xmlWriter(&file);
+    xmlWriter.setAutoFormatting(true);
+
+    xmlWriter.writeStartDocument();
+    xmlWriter.writeStartElement("MapScene");
+
+    QRectF sceneRect;
+    if (sceneRectItem != nullptr) {
+        sceneRect = sceneRectItem->rect();
+    }
+    else {
+        sceneRect = QRectF();
+    }
+    xmlWriter.writeStartElement("MapSceneRect");
+    xmlWriter.writeAttribute("isDefined", sceneRectItem != nullptr? "true" : "false");
+    xmlWriter.writeStartElement("TopLeftPoint");
+    xmlWriter.writeAttribute("x", QString::number(sceneRect.topLeft().x()));
+    xmlWriter.writeAttribute("y", QString::number(sceneRect.topLeft().y()));
+    xmlWriter.writeEndElement();
+    xmlWriter.writeStartElement("BottomRightPoint");
+    xmlWriter.writeAttribute("x", QString::number(sceneRect.bottomRight().x()));
+    xmlWriter.writeAttribute("y", QString::number(sceneRect.bottomRight().y()));
+    xmlWriter.writeEndElement();
+    xmlWriter.writeEndElement();
+
+    QPointF startMarkPos;
+    getStartMarkPos(startMarkPos);
+    xmlWriter.writeStartElement("StartMark");
+    xmlWriter.writeAttribute("isPlaced", getStartItem() != nullptr? "true" : "false");
+    xmlWriter.writeStartElement("Position");
+    xmlWriter.writeAttribute("x", QString::number(startMarkPos.x()));
+    xmlWriter.writeAttribute("y", QString::number(startMarkPos.y()));
+    xmlWriter.writeEndElement();
+    xmlWriter.writeEndElement();
+
+    QPointF finishMarkPos;
+    getFinishMarkPos(finishMarkPos);
+    xmlWriter.writeStartElement("FinishMark");
+    xmlWriter.writeAttribute("isPlaced", getFinishItem() != nullptr? "true" : "false");
+    xmlWriter.writeStartElement("Position");
+    xmlWriter.writeAttribute("x", QString::number(finishMarkPos.x()));
+    xmlWriter.writeAttribute("y", QString::number(finishMarkPos.y()));
+    xmlWriter.writeEndElement();
+    xmlWriter.writeEndElement();
+
+    xmlWriter.writeStartElement("Polygons");
+    for (int i = 0; i < polygonItems.length(); i++) {
+        xmlWriter.writeStartElement("Polygon");
+        QGraphicsPolygonItem* polyItem = polygonItems[i];
+        QPolygonF polygon = polyItem->polygon();
+
+        int obstacleValue = qobject_cast<QSpinBox*>(spinBoxes[i]->widget())->value();
+        xmlWriter.writeAttribute("ObstacleValue", QString::number(obstacleValue));
+
+        for (const QPointF& point : polygon) {
+            xmlWriter.writeStartElement("Point");
+            xmlWriter.writeAttribute("x", QString::number(point.x()));
+            xmlWriter.writeAttribute("y", QString::number(point.y()));
+            xmlWriter.writeEndElement();
+        }
+        xmlWriter.writeEndElement();
+    }
+    xmlWriter.writeEndElement();
+
+    xmlWriter.writeEndElement();
+    xmlWriter.writeEndDocument();
+}
+
+void MapScene::loadMapSceneFromXML(QFile& file) {
+    clear();
+
+    if (!file.isOpen() || !file.isReadable()) {
+        return;
+    }
+
+    QXmlStreamReader xmlReader(&file);
+    while (!xmlReader.atEnd()) {
+        xmlReader.readNext();
+
+        if (xmlReader.isStartElement()) {
+            if (xmlReader.name().toString() == "MapSceneRect") {
+                bool isRectDefined = (xmlReader.attributes().value("isDefined").toString() == "true");
+
+                if (isRectDefined) {
+                    QPointF topLeft;
+                    QPointF bottomRight;
+                    while (!(xmlReader.isEndElement() && xmlReader.name().toString() == "MapSceneRect")) {
+                        xmlReader.readNext();
+                        if (xmlReader.isStartElement() && xmlReader.name().toString() == "TopLeftPoint") {
+                            float x = xmlReader.attributes().value("x").toFloat();
+                            float y = xmlReader.attributes().value("y").toFloat();
+                            topLeft.setX(x);
+                            topLeft.setY(y);
+                        }
+                        else if (xmlReader.isStartElement() && xmlReader.name().toString() == "BottomRightPoint") {
+                            float x = xmlReader.attributes().value("x").toFloat();
+                            float y = xmlReader.attributes().value("y").toFloat();
+                            bottomRight.setX(x);
+                            bottomRight.setY(y);
+                        }
+                    }
+                    QRectF sceneRect(topLeft, bottomRight);
+                    sceneRectItem = new QGraphicsRectItem(sceneRect);
+                    addItem(sceneRectItem);
+                }
+            }
+            else if (xmlReader.name().toString() == "StartMark") {
+                bool isMarkPlaced = (xmlReader.attributes().value("isPlaced").toString() == "true");
+
+                if (isMarkPlaced) {
+                    float x = 0;
+                    float y = 0;
+                    while (!(xmlReader.isEndElement() && xmlReader.name().toString() == "StartMark")) {
+                        xmlReader.readNext();
+                        if (xmlReader.isStartElement() && xmlReader.name().toString() == "Position") {
+                            x = xmlReader.attributes().value("x").toFloat();
+                            y = xmlReader.attributes().value("y").toFloat();
+                        }
+                    }
+                    QPixmap pixmap(":/svg/resources/startMarker.svg");
+                    startMarkItem = new QGraphicsPixmapItem(pixmap);
+                    startMarkItem->setScale(1.5);
+                    addItem(startMarkItem);
+                    QPointF markPos(x, y);
+                    startMarkItem->setPos(markPos);
+                }
+            }
+            else if (xmlReader.name().toString() == "FinishMark") {
+                bool isMarkPlaced = (xmlReader.attributes().value("isPlaced").toString() == "true");
+
+                if (isMarkPlaced) {
+                    float x = 0;
+                    float y = 0;
+                    while (!(xmlReader.isEndElement() && xmlReader.name().toString() == "FinishMark")) {
+                        xmlReader.readNext();
+                        if (xmlReader.isStartElement() && xmlReader.name().toString() == "Position") {
+                            x = xmlReader.attributes().value("x").toFloat();
+                            y = xmlReader.attributes().value("y").toFloat();
+                        }
+                    }
+                    QPixmap pixmap(":/svg/resources/finishMarker.svg");
+                    finishMarkItem = new QGraphicsPixmapItem(pixmap);
+                    finishMarkItem->setScale(1.5);
+                    addItem(finishMarkItem);
+                    QPointF markPos(x, y);
+                    finishMarkItem->setPos(markPos);
+                }
+            }
+            else if (xmlReader.name().toString() == "Polygons") {
+                while (!(xmlReader.isEndElement() && xmlReader.name().toString() == "Polygons")) {
+                    xmlReader.readNext();
+                    if (xmlReader.isStartElement() && xmlReader.name().toString() == "Polygon") {
+                        int obstacleValue = xmlReader.attributes().value("ObstacleValue").toInt();
+
+                        while (!(xmlReader.isEndElement() && xmlReader.name().toString() == "Polygon")) {
+                            xmlReader.readNext();
+                            if (xmlReader.isStartElement() && xmlReader.name().toString() == "Point") {
+                                float x = xmlReader.attributes().value("x").toFloat();
+                                float y = xmlReader.attributes().value("y").toFloat();
+                                QPointF polygonPoint(x, y);
+                                currentPolygon << polygonPoint;
+                            }
+                        }
+                        polygonItem = new QGraphicsPolygonItem(currentPolygon);
+                        polygonItem->setBrush(Qt::gray);
+                        addItem(polygonItem);
+                        addCurrentPolygon(obstacleValue);
+                    }
+                }
+            }
+        }
+    }
+}
+
 void MapScene::clear() {
     QGraphicsScene::clear();
     polygonItems = QList<QGraphicsPolygonItem*>();
     spinBoxes = QList<QGraphicsProxyWidget*>();
+    pathItems = QList<QGraphicsLineItem*>();
     currentPolygon = QPolygonF();
     startMarkItem = nullptr;
     finishMarkItem = nullptr;
     polygonItem = nullptr;
     currentLineItem = nullptr;
-}
-QGraphicsPixmapItem* MapScene::startItem(){
-    return startMarkItem;
-}
-QGraphicsPixmapItem* MapScene::finishItem(){
-    return startMarkItem;
+    sceneRectItem = nullptr;
 }

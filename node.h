@@ -1,13 +1,10 @@
-
 #ifndef NODE_H
 #define NODE_H
-#pragma once
-#include "mapeditor.h"
 
+#include <QtTypes>
+#include <climits>
 
-
-class Node
-{
+class Node {
 public:
     bool walkable;
     int difficulty;

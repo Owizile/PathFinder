@@ -5,6 +5,9 @@
         <file>resources/finishMarker.svg</file>
         <file>resources/startMarker.svg</file>
         <file>resources/editMark.svg</file>
+        <file>resources/loadFile.svg</file>
+        <file>resources/saveFile.svg</file>
+        <file>resources/route.svg</file>
     </qresource>
     <qresource prefix="/icon">
         <file>resources/appIcon.ico</file>

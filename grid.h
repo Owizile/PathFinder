@@ -1,22 +1,18 @@
-
 #ifndef GRID_H
 #define GRID_H
 
-#pragma once
-#include "mapeditor.h"
 #include "node.h"
 #include "mapscene.h"
 
 
-class Grid
-{
+class Grid {
 public:
     int worldSizeX, worldSizeY;
     int gridWorldSizeX, gridWorldSizeY;
     int gridStartX, gridStartY;
     int gridFinishX, gridFinishY;
-    int maxSize();
     qreal nodeRadius;
+    int maxSize();
     void start(float _radius, QRectF sceneRect, MapScene* mapScene);
     Node nodeByWorldPosition(qreal _worldPosX, qreal _worldPosY);
     Node getNode(int x, int y);

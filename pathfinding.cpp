@@ -1,13 +1,10 @@
-
 #include "pathfinding.h"
 
-PathFinding::PathFinding(Grid _grid)
-{
+PathFinding::PathFinding(Grid _grid) {
     grid = _grid;
 }
 
-QList<Node> PathFinding::findPath()
-{
+QList<Node> PathFinding::findPath() {
     Node startNode = grid.getNode(grid.gridStartX,grid.gridStartY);
     Node finishNode = grid.getNode(grid.gridFinishX,grid.gridFinishY);
 
@@ -19,7 +16,8 @@ QList<Node> PathFinding::findPath()
     while(openSet.length()>0){
         Node currNode = openSet[0];
         for(qsizetype i = 1; i < openSet.length(); i++){
-            if ((openSet[i].fCost() < currNode.fCost()) || ((openSet[i].fCost() == currNode.fCost()) && (openSet[i].hCost < currNode.hCost))){
+            if ((openSet[i].fCost() < currNode.fCost()) ||
+               ((openSet[i].fCost() == currNode.fCost()) && (openSet[i].hCost < currNode.hCost))){
                 currNode = openSet[i];
             }
         }
@@ -47,7 +45,8 @@ QList<Node> PathFinding::findPath()
             }
             finishNode.parentX = currNode.gridX;
             finishNode.parentY = currNode.gridY;
-            long double newMoveCostToNeighbour = currNode.gCost + getDistance(currNode, *neighbour) + coeff(currNode.difficulty)*getDistance(currNode, *neighbour);
+            long double newMoveCostToNeighbour = currNode.gCost + getDistance(currNode, *neighbour)
+                                                                + coeff(currNode.difficulty) * getDistance(currNode, *neighbour);
             if((newMoveCostToNeighbour < neighbour->gCost) && (!contain)){
                 neighbour->gCost = newMoveCostToNeighbour;
                 neighbour->hCost = getDistance(*neighbour, finishNode);
@@ -59,14 +58,16 @@ QList<Node> PathFinding::findPath()
             }
         }
     }
+    return grid.path;
 }
 
-long double PathFinding::getDistance(Node nodeA, Node nodeB){
+float PathFinding::getDistance(Node nodeA, Node nodeB) {
     int dstX = std::abs(nodeA.gridX - nodeB.gridX);
     int dstY = std::abs(nodeA.gridY - nodeB.gridY);
     return (qMin(dstX,dstY)*14 + 10*(qMax(dstX,dstY)-qMin(dstX,dstY)));
 }
-void PathFinding::retracePath(Node startNode, Node finishNode){
+
+void PathFinding::retracePath(Node startNode, Node finishNode) {
     QList<Node> path = QList<Node>();
     Node currNode = finishNode;
     while((currNode.gridX != startNode.gridX)||(currNode.gridY != startNode.gridY)){
@@ -75,8 +76,7 @@ void PathFinding::retracePath(Node startNode, Node finishNode){
     }
     grid.path = path;
 }
-int PathFinding::coeff(int diff){
-    int res;
-    res = diff/10;
-    return res;
+
+float PathFinding::coeff(int diff) {
+    return diff / 100.0;
 }

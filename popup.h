@@ -10,8 +10,7 @@
 #include <QTimer>
 
 
-class PopUp : public QWidget
-{
+class PopUp : public QWidget {
     Q_OBJECT
     Q_PROPERTY(float popupOpacity READ getPopupOpacity WRITE setPopupOpacity)
 
