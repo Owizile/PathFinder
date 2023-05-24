@@ -1,6 +1,7 @@
 #ifndef MAPSCENE_H
 #define MAPSCENE_H
 
+#include <QtMath>
 #include <QGraphicsScene>
 #include <QGraphicsLineItem>
 #include <QGraphicsSceneMouseEvent>
@@ -26,13 +27,15 @@ public:
     QString getModeName();
     void getStartMarkPos(QPointF& startMarkPos);
     void getFinishMarkPos(QPointF& finishMarkPos);
-    int getDifficulty(qreal worldPositionX, qreal worldPositionY,qreal diameter, bool centered);
+    int getDifficulty(qreal worldPositionX, qreal worldPositionY,qreal diameter);
     bool gridStart(qreal worldPositionX, qreal worldPositionY,qreal diameter);
     bool gridFinish(qreal worldPositionX, qreal worldPositionY,qreal diameter);
     QGraphicsPixmapItem* getStartItem();
     QGraphicsPixmapItem* getFinishItem();
     void saveMapSceneToXML(QFile& file);
     void loadMapSceneFromXML(QFile& file);
+    double getPathLength();
+    double getPathTime();
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;

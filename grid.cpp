@@ -16,7 +16,7 @@ void Grid::start(float _radius, QRectF sceneRect, MapScene* mapScene) {
             qreal worldPointX, worldPointY;
             worldPointX = sceneRect.left() + x*nodeDiameter;
             worldPointY = sceneRect.top() + y*nodeDiameter;
-            int difficulty = mapScene->getDifficulty(worldPointX,worldPointY, nodeDiameter, false);
+            int difficulty = mapScene->getDifficulty(worldPointX,worldPointY, nodeDiameter);
             bool walkable = true;
             if(difficulty == 100){
                 walkable = false;
